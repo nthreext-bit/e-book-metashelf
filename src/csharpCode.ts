@@ -117,6 +117,54 @@ export const csharpProjectFiles: CodeFile[] = [
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Premium Dark DataGrid Styles with Resize Grips -->
+        <Style TargetType="DataGrid">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="RowBackground" Value="#1E1E1E"/>
+            <Setter Property="AlternatingRowBackground" Value="#252525"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="{StaticResource TextBrush}"/>
+            <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+            <Setter Property="HorizontalGridLinesBrush" Value="#2D2D2D"/>
+            <Setter Property="VerticalGridLinesBrush" Value="#2D2D2D"/>
+            <Setter Property="CanUserResizeColumns" Value="True"/>
+            <Setter Property="CanUserResizeRows" Value="False"/>
+            <Setter Property="HeadersVisibility" Value="All"/>
+        </Style>
+
+        <Style TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="#2A2A2A"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="10,12"/>
+            <Setter Property="BorderBrush" Value="#3D3D3D"/>
+            <Setter Property="BorderThickness" Value="0,0,1,1"/>
+            <Setter Property="HorizontalContentAlignment" Value="Left"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <Style TargetType="DataGridCell">
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridCell">
+                        <Border Padding="{TemplateBinding Padding}" 
+                                Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#005A9E"/>
+                    <Setter Property="Foreground" Value="White"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </Application.Resources>
 </Application>`
   },
@@ -708,6 +756,8 @@ namespace EkitapDuzenleyici.ViewModels
         public ICommand ExportExcelCommand { get; }
         public ICommand ImportExcelCommand { get; }
         public ICommand ApplyBatchCategoryCommand { get; }
+        public ICommand SelectSourceFolderCommand { get; }
+        public ICommand SelectTargetFolderCommand { get; }
 
         public MainViewModel()
         {
@@ -716,6 +766,8 @@ namespace EkitapDuzenleyici.ViewModels
             ExportExcelCommand = new AsyncRelayCommand(ExportExcelAsync);
             ImportExcelCommand = new AsyncRelayCommand(ImportExcelAsync);
             ApplyBatchCategoryCommand = new RelayCommand<string>(ApplyBatchCategory);
+            SelectSourceFolderCommand = new RelayCommand(SelectSourceFolder);
+            SelectTargetFolderCommand = new RelayCommand(SelectTargetFolder);
 
             LoadSettings();
             LoadDefaultCategories();
@@ -935,6 +987,54 @@ namespace EkitapDuzenleyici.ViewModels
             MessageBox.Show($"Excel dosyasından {updated} kitap başarıyla güncellendi!", "Excel İçe Aktarımı");
         }
 
+        private void SelectSourceFolder()
+        {
+            try
+            {
+                var dialog = new Microsoft.Win32.OpenFolderDialog
+                {
+                    Title = "Kaynak Klasör Seçin",
+                    Multiselect = false
+                };
+                if (!string.IsNullOrEmpty(SourceFolder) && Directory.Exists(SourceFolder))
+                {
+                    dialog.InitialDirectory = SourceFolder;
+                }
+                if (dialog.ShowDialog() == true)
+                {
+                    SourceFolder = dialog.FolderName;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Klasör seçici açılamadı: {ex.Message}", "Hata");
+            }
+        }
+
+        private void SelectTargetFolder()
+        {
+            try
+            {
+                var dialog = new Microsoft.Win32.OpenFolderDialog
+                {
+                    Title = "Hedef Klasör Seçin",
+                    Multiselect = false
+                };
+                if (!string.IsNullOrEmpty(TargetFolder) && Directory.Exists(TargetFolder))
+                {
+                    dialog.InitialDirectory = TargetFolder;
+                }
+                if (dialog.ShowDialog() == true)
+                {
+                    TargetFolder = dialog.FolderName;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Klasör seçici açılamadı: {ex.Message}", "Hata");
+            }
+        }
+
         private void LoadSettings()
         {
             try
@@ -1058,7 +1158,7 @@ namespace EkitapDuzenleyici.ViewModels
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBox Text="{Binding SourceFolder, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBoxStyle}"/>
-                            <Button Grid.Column="1" Content="..." Width="30" Margin="5,0,0,0" Style="{StaticResource ModernButtonStyle}" Background="#444"/>
+                            <Button Grid.Column="1" Content="..." Command="{Binding SelectSourceFolderCommand}" Width="30" Margin="5,0,0,0" Style="{StaticResource ModernButtonStyle}" Background="#444"/>
                         </Grid>
 
                         <CheckBox IsChecked="{Binding IncludeSubfolders}" Content="Alt klasörleri de tara" Foreground="{StaticResource TextBrush}" Margin="0,0,0,12"/>
@@ -1077,7 +1177,7 @@ namespace EkitapDuzenleyici.ViewModels
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <TextBox Text="{Binding TargetFolder, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource ModernTextBoxStyle}"/>
-                            <Button Grid.Column="1" Content="..." Width="30" Margin="5,0,0,0" Style="{StaticResource ModernButtonStyle}" Background="#444"/>
+                            <Button Grid.Column="1" Content="..." Command="{Binding SelectTargetFolderCommand}" Width="30" Margin="5,0,0,0" Style="{StaticResource ModernButtonStyle}" Background="#444"/>
                         </Grid>
 
                         <TextBlock Text="Klasör Şablonu:" Margin="0,5,0,3" Foreground="{StaticResource MutedTextBrush}" FontSize="12"/>
